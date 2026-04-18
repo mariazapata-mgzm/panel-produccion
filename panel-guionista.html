@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Guionista — Producción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26;
+  --border: rgba(255,255,255,0.08); --accent: #6c63ff; --accent2: #ff6584;
+  --text: #e8e8f0; --muted: #6b6b80; --success: #4ade80; --warning: #fbbf24;
+  --mono: 'DM Mono', monospace; --sans: 'Syne', sans-serif;
+}
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+.header-title { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.video-counter { background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; letter-spacing: .08em; }
+.steps-bar { display: flex; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); gap: 0; overflow-x: auto; }
+.step-tab { padding: 12px 20px; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid transparent; cursor: default; white-space: nowrap; transition: all .2s; }
+.step-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.step-tab.done { color: var(--success); border-bottom-color: var(--success); }
+.step-tab.clickable { cursor: pointer; }
+.main { padding: 24px; max-width: 900px; margin: 0 auto; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.panel-label { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; color: var(--text); font-family: var(--mono); font-size: 12px; line-height: 1.7; resize: vertical; outline: none; transition: border-color .2s; }
+textarea:focus { border-color: var(--accent); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; border: none; transition: all .15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: .85; transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-success { background: var(--success); color: #000; font-weight: 700; }
+.btn-success:hover { opacity: .85; }
+.titles-grid { display: flex; flex-direction: column; gap: 8px; }
+.title-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .15s; }
+.title-option:hover { border-color: var(--accent); }
+.title-option.selected { border-color: var(--accent); background: rgba(108,99,255,.08); }
+.title-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+.title-option.selected .title-num { background: var(--accent); color: #fff; }
+.title-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+.doc-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: var(--mono); font-size: 12px; line-height: 1.9; white-space: pre-wrap; color: var(--text); max-height: 500px; overflow-y: auto; }
+.doc-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+.doc-hook { color: var(--warning); }
+.doc-section { color: var(--accent2); font-weight: 600; margin-top: 12px; display: block; }
+.doc-clip { color: var(--text); }
+.doc-question { color: var(--muted); }
+.copy-area { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 11px; line-height: 1.8; color: var(--text); white-space: pre-wrap; max-height: 400px; overflow-y: auto; user-select: all; cursor: text; }
+.row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.spacer { height: 8px; }
+.info-box { background: rgba(108,99,255,.08); border: 1px solid rgba(108,99,255,.2); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 14px; }
+.warn-box { background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.3); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--warning); line-height: 1.6; margin-bottom: 14px; }
+.hidden { display: none; }
+.video-log { display: flex; flex-direction: column; gap: 6px; }
+.log-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font-size: 11px; }
+.log-title { color: var(--text); font-family: var(--mono); }
+.log-status { color: var(--success); font-weight: 600; }
+.manual-section { margin-top: 12px; }
+.clips-preview { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.clip-item { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 11px; font-family: var(--mono); color: var(--text); line-height: 1.5; }
+.clip-num { color: var(--accent); font-weight: 600; margin-right: 8px; }
+.clips-count { font-size: 11px; margin-top: 8px; }
+.clips-count.ok { color: var(--success); }
+.clips-count.warn { color: var(--warning); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-title">Panel Guionista — Producción</span>
+  <span class="video-counter" id="vid-counter">VIDEO 1</span>
+</div>
+
+<div class="steps-bar">
+  <div class="step-tab active" id="tab-1">1 · Gemini</div>
+  <div class="step-tab" id="tab-2">2 · Título</div>
+  <div class="step-tab" id="tab-3">3 · Preview</div>
+  <div class="step-tab" id="tab-4">4 · Cowork</div>
+  <div class="step-tab clickable" id="tab-5" onclick="showregistro()">Registro</div>
+</div>
+
+<div class="main">
+
+  <div id="step-1">
+    <div class="panel">
+      <div class="panel-label">Resultado completo de Gemini</div>
+      <div class="info-box">Pega aquí el resultado completo que te entregó Gemini incluyendo todos los CLIPs, títulos, hooks, descripciones y preguntas.</div>
+      <textarea id="gemini-input" rows="16" placeholder="Pega aquí el resultado completo de Gemini..."></textarea>
+    </div>
+    <div id="parse-warning" class="warn-box hidden"></div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="goStep2()">Continuar → Elegir título</button>
+    </div>
+  </div>
+
+  <div id="step-2" class="hidden">
+    <div class="panel">
+      <div class="panel-label">Elige el título de portada más impactante</div>
+      <div class="info-box">Selecciona el título que irá en la portada del video.</div>
+      <div class="titles-grid" id="titles-list"></div>
+      <div class="manual-section">
+        <div class="panel-label" style="margin-bottom:6px">O escribe el título manualmente</div>
+        <textarea id="manual-title" rows="2" placeholder="Escribe aquí el título si no aparece en la lista..."></textarea>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Clips detectados del guion</div>
+      <div class="clips-preview" id="clips-preview"></div>
+      <div class="clips-count" id="clips-count"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="goStep1()">← Volver</button>
+      <button class="btn btn-primary" onclick="goStep3()">Confirmar título →</button>
+    </div>
+  </div>
+
+  <div id="step-3" class="hidden">
+    <div class="panel">
+      <div class="panel-label">Preview del documento — VIDEO <span id="preview-num">1</span></div>
+      <div class="doc-preview" id="doc-preview"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="goStep2()">← Cambiar título</button>
+      <button class="btn btn-primary" onclick="goStep4()">Confirmar y preparar para Cowork →</button>
+    </div>
+  </div>
+
+  <div id="step-4" class="hidden">
+    <div class="panel">
+      <div class="panel-label">Texto listo para Cowork — copia y pega en el agente guardador</div>
+      <div class="info-box">Copia este texto y pégalo en el Agente Guardador de Cowork. Se guardará automáticamente en Drive.</div>
+      <div class="copy-area" id="copy-area" onclick="selectAllText(this)"></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="copyToClipboard()">Copiar texto</button>
+      <button class="btn btn-success" onclick="nextVideo()">✓ Guardado — Siguiente video</button>
+    </div>
+  </div>
+
+  <div id="step-5" class="hidden">
+    <div class="panel">
+      <div class="panel-label">Registro de videos procesados hoy</div>
+      <div class="video-log" id="video-log"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="goStep1FromLog()">+ Procesar nuevo video</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentVideo = 1;
+let selectedTitleIndex = -1;
+let parsedData = {};
+let processedVideos = [];
+
+function setTab(n) {
+  for (let i = 1; i <= 5; i++) {
+    const t = document.getElementById('tab-' + i);
+    t.classList.remove('active');
+    if (i < n) t.classList.add('done');
+    else t.classList.remove('done');
+  }
+  document.getElementById('tab-' + n).classList.add('active');
+}
+
+function showOnly(id) {
+  ['step-1','step-2','step-3','step-4','step-5'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function goStep1() { setTab(1); showOnly('step-1'); }
+
+function goStep2() {
+  const raw = document.getElementById('gemini-input').value.trim();
+  if (!raw) { alert('Pega el resultado de Gemini primero.'); return; }
+  parsedData = parseGemini(raw);
+  const warn = document.getElementById('parse-warning');
+  if (parsedData.clips.length < 10) {
+    warn.textContent = 'Advertencia: se detectaron ' + parsedData.clips.length + ' de 10 clips. Revisa los clips detectados abajo antes de continuar.';
+    warn.classList.remove('hidden');
+  } else {
+    warn.classList.add('hidden');
+  }
+  renderTitles();
+  renderClipsPreview();
+  setTab(2);
+  showOnly('step-2');
+}
+
+function parseGemini(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  let titles = [], clips = [], questions = [], hooks = [], descs = [];
+
+  // Extract structured fields from emoji markers
+  for (let line of lines) {
+    if (line.includes('\uD83C\uDFAF') || /tema\s+portada\s*:/i.test(line)) {
+      const v = line.replace(/^[^:]*:\s*/, '').replace(/\uD83C\uDFAF/g,'').trim();
+      if (v.length > 3 && !titles.includes(v)) titles.push(v);
+    }
+    if (line.includes('\uD83EAA9D') || /hook\s*:/i.test(line) || /subtema\s*:/i.test(line)) {
+      const v = line.replace(/^[^:]*:\s*/, '').replace(/\uD83EAA9D/g,'').trim();
+      if (v.length > 3) hooks.push(v);
+    }
+    if (line.includes('\uD83D\uDCDD') || /descripci[o\u00f3]n\s*:/i.test(line)) {
+      const v = line.replace(/^[^:]*:\s*/, '').replace(/\uD83D\uDCDD/g,'').trim();
+      if (v.length > 3) descs.push(v);
+    }
+    if (line.includes('\uD83D\uDCAC') || /comentario\s*:/i.test(line)) {
+      const v = line.replace(/^[^:]*:\s*/, '').replace(/\uD83D\uDCAC/g,'').trim();
+      if (v.length > 5) questions.push(v);
+    }
+    if (/^\u00BF/.test(line) && line.length > 10) {
+      if (!questions.includes(line)) questions.push(line);
+    }
+  }
+
+  // PRIMARY clip extraction: find lines after "Gu\u00EDon del clip:" label
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isGuionLabel = /^gu[i\u00ed]on\s+del\s+clip\s*[:\-]?\s*/i.test(line);
+    if (isGuionLabel) {
+      const inline = line.replace(/^gu[i\u00ed]on\s+del\s+clip\s*[:\-]?\s*/i, '').trim();
+      if (inline.length > 15) {
+        clips.push(inline);
+      } else {
+        // check next non-empty line
+        for (let j = i+1; j < Math.min(i+3, lines.length); j++) {
+          const next = lines[j].trim();
+          if (next.length > 15 && !/^(clip|gu[i\u00ed]on|\uD83C\uDFAF|\uD83EAA9D|\uD83D\uDCDD|\uD83D\uDCAC)/i.test(next)) {
+            clips.push(next);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // SECONDARY: regex across full text for "Guion del clip: [text]"
+  if (clips.length < 3) {
+    clips = [];
+    const re = /gu[i\u00ed]on\s+del\s+clip\s*[:\-]\s*([^\n]+)/gi;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const t = m[1].trim();
+      if (t.length > 15 && !clips.includes(t)) clips.push(t);
+    }
+  }
+
+  // TERTIARY: extract script lines by scanning block structure
+  if (clips.length < 3) {
+    clips = [];
+    let waitingForGuion = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^CLIP\s*\d+/i.test(line) || /^BLOQUE/i.test(line)) {
+        waitingForGuion = false;
+      }
+      if (/^gu[i\u00ed]on/i.test(line)) {
+        const inline = line.replace(/^gu[i\u00ed]on[^:]*:\s*/i,'').trim();
+        if (inline.length > 15) { clips.push(inline); }
+        else { waitingForGuion = true; }
+        continue;
+      }
+      if (waitingForGuion && line.length > 15 && !/^(\uD83C\uDFAF|\uD83EAA9D|\uD83D\uDCDD|\uD83D\uDCAC|CLIP|BLOQUE|VIDEO)/i.test(line)) {
+        clips.push(line);
+        waitingForGuion = false;
+      }
+    }
+  }
+
+  clips = [...new Set(clips)].slice(0, 10);
+  questions = [...new Set(questions)].slice(0, 3);
+
+  return { titles, hooks, descs, clips, questions };
+}
+
+function renderTitles() {
+  const list = document.getElementById('titles-list');
+  list.innerHTML = '';
+  selectedTitleIndex = -1;
+  if (!parsedData.titles || parsedData.titles.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No se detectaron títulos. Escribe el título en el campo de abajo.</div>';
+    return;
+  }
+  parsedData.titles.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'title-option';
+    div.innerHTML = '<div class="title-num">'+(i+1)+'</div><div class="title-text">'+t+'</div>';
+    div.onclick = () => {
+      document.querySelectorAll('.title-option').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedTitleIndex = i;
+      document.getElementById('manual-title').value = '';
+    };
+    list.appendChild(div);
+  });
+}
+
+function renderClipsPreview() {
+  const container = document.getElementById('clips-preview');
+  const countEl = document.getElementById('clips-count');
+  container.innerHTML = '';
+  if (!parsedData.clips || parsedData.clips.length === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--warning);padding:8px">No se detectaron clips. Verifica el formato del texto de Gemini.</div>';
+    countEl.textContent = '0 de 10 clips detectados';
+    countEl.className = 'clips-count warn';
+    return;
+  }
+  parsedData.clips.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'clip-item';
+    div.innerHTML = '<span class="clip-num">Clip '+(i+1)+'</span>'+c;
+    container.appendChild(div);
+  });
+  const count = parsedData.clips.length;
+  countEl.textContent = count + ' de 10 clips detectados' + (count===10?' \u2713':' \u2014 faltan '+(10-count));
+  countEl.className = 'clips-count ' + (count===10?'ok':'warn');
+}
+
+function getSelectedTitle() {
+  const manual = document.getElementById('manual-title').value.trim();
+  if (manual) return manual;
+  if (selectedTitleIndex >= 0 && parsedData.titles && parsedData.titles[selectedTitleIndex]) return parsedData.titles[selectedTitleIndex];
+  return null;
+}
+
+function buildDocument() {
+  const title = getSelectedTitle();
+  const idx = selectedTitleIndex >= 0 ? selectedTitleIndex : 0;
+  const hook = (parsedData.hooks && parsedData.hooks[idx]) || (parsedData.hooks && parsedData.hooks[0]) || '';
+  const desc = (parsedData.descs && parsedData.descs[idx]) || (parsedData.descs && parsedData.descs[0]) || '';
+  const clips = parsedData.clips ? parsedData.clips.slice(0,10) : [];
+  const questions = parsedData.questions ? parsedData.questions.slice(0,3) : [];
+  let doc = 'VIDEO '+currentVideo+'  '+title+'\n';
+  doc += '\uD83E\uDDE0'+hook+'\n';
+  doc += desc+'\n\n';
+  doc += 'GUION\n';
+  clips.forEach(c => { doc += c+'\n'; });
+  doc += '\nPREGUNTAS\n';
+  questions.forEach(q => { doc += q+'\n'; });
+  return doc;
+}
+
+function goStep3() {
+  const title = getSelectedTitle();
+  if (!title) { alert('Selecciona o escribe un título primero.'); return; }
+  if (!parsedData.clips || parsedData.clips.length === 0) {
+    if (!confirm('No se detectaron clips del guion. \u00BFContinuar de todas formas?')) return;
+  }
+  const doc = buildDocument();
+  document.getElementById('preview-num').textContent = currentVideo;
+  const preview = document.getElementById('doc-preview');
+  const lines = doc.split('\n');
+  preview.innerHTML = lines.map((l,i) => {
+    if (i===0) return '<span class="doc-title">'+l+'</span>';
+    if (i===1) return '<span class="doc-hook">'+l+'</span>';
+    if (l==='GUION'||l==='PREGUNTAS') return '<span class="doc-section">'+l+'</span>';
+    if (l.startsWith('\u00BF')) return '<span class="doc-question">'+l+'</span>';
+    return '<span class="doc-clip">'+l+'</span>';
+  }).join('\n');
+  setTab(3); showOnly('step-3');
+}
+
+function goStep4() {
+  const doc = buildDocument();
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const coworkText = 'GUARDAR EN DRIVE \u2014 VIDEO '+currentVideo+'\n\nDocumento: Guiones Semana '+dateStr+'\nHoja: Nueva hoja \u2014 VIDEO '+currentVideo+'\n\n'+doc+'\n\n---FIN VIDEO '+currentVideo+'---';
+  document.getElementById('copy-area').textContent = coworkText;
+  setTab(4); showOnly('step-4');
+}
+
+function copyToClipboard() {
+  const text = document.getElementById('copy-area').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '\u2713 Copiado';
+    setTimeout(()=>{ btn.textContent=orig; }, 1500);
+  });
+}
+
+function selectAllText(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+}
+
+function nextVideo() {
+  const title = getSelectedTitle();
+  processedVideos.push({ num: currentVideo, title: title||'Sin t\u00EDtulo' });
+  currentVideo++;
+  document.getElementById('vid-counter').textContent = 'VIDEO '+currentVideo;
+  document.getElementById('gemini-input').value = '';
+  document.getElementById('manual-title').value = '';
+  selectedTitleIndex = -1;
+  parsedData = {};
+  document.getElementById('parse-warning').classList.add('hidden');
+  goStep1();
+}
+
+function showregistro() {
+  renderLog(); showOnly('step-5');
+  for (let i=1;i<=5;i++) { const t=document.getElementById('tab-'+i); t.classList.remove('active','done'); }
+  document.getElementById('tab-5').classList.add('active');
+}
+
+function goStep1FromLog() { setTab(1); showOnly('step-1'); }
+
+function renderLog() {
+  const log = document.getElementById('video-log');
+  if (!processedVideos.length) {
+    log.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px">No hay videos procesados a\u00FAn.</div>';
+    return;
+  }
+  log.innerHTML = processedVideos.map(v=>'<div class="log-item"><span class="log-title">VIDEO '+v.num+' \u2014 '+v.title+'</span><span class="log-status">\u2713 GUARDADO</span></div>').join('');
+}
+</script>
+</body>
+</html>
